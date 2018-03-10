@@ -56,11 +56,13 @@ class rq:
         else:
             return ""
     @staticmethod        
-    def rw(path, line="", aw='a',sp=""):
+    def rw(path, line="", aw='a',sp=""):    
         if line == "":
             arr = []
             try:
                 with open(path, 'r', encoding='utf-8') as f:
+                    if aw=="r":
+                        return f.read()
                     for l in f:
                         if sp=="":
                             arr.append(l.replace("\n", ""))
@@ -68,6 +70,8 @@ class rq:
                             arr.append(l.replace("\n", "").split(sp))                           
             except:
                 with open(path, 'r', encoding='gb2312') as f:
+                    if aw=="r":
+                        return f.read()
                     for l in f:
                         if sp=="":
                             arr.append(l.replace("\n", ""))
@@ -145,9 +149,10 @@ class rq:
         fp.close()
         
     @staticmethod
-    def u2f(url,path):
-        header_s = {"User-Agent":rq.rua2()}
-        content=requests.get(url,headers=header_s,stream=True,verify=False,timeout=60).content
+    def u2f(url,path,headers=""):   
+        if headers=="":
+            header_s = {"User-Agent":rq.rua2()}
+        content=requests.get(url,headers=headers,stream=True,verify=False,timeout=60).content
         fp = open(path,"wb")
         fp.write(content)
         fp.close()
