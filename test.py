@@ -1,56 +1,34 @@
-#from Fleader.Get import rq
-#主要是方便测试的几个简单的demo
-from Fleader.Get import rq
-#from lxml import etree
-#from pprint import pprint
-#import json,re,bs4
-#import os
+from fleader import fleader as rq
 
 
-url="http://www.baidu.com/"
-rt=rq.get(url)
-rq.rw(r"index.html",rt)
-
-'''
-soup=bs4.BeautifulSoup(rq,"html.parser")
-af=soup.find(attrs={'class':'GridTableContent'}).findAll('tr')
-
-selector=etree.HTML(rt)
-content=selector.xpath('//*[@class="full-list-wrap"]/div')
-
-re.findall("a href=\'[a-zA-z]+://[^\s]*prof-sb-browse_map-name",html2)
+# _,doc=rq.get('http://www.runoob.com/',ex='jq')
+# item = doc('.item-top,.item-1').items()
+# for i in item:
+# 	print(i.attr('class'))
+# 	print(i('h4').text())
+# 	print('==========================')
 
 
-URLS = ['http://www.cnblogs.com/moodlxs/p/3248890.html', 
-        'https://www.zhihu.com/topic/19804387/newest',
-        'http://blog.csdn.net/yueguanghaidao/article/details/24281751',
-        'https://my.oschina.net/visualgui823/blog/36987',
-        'http://blog.chinaunix.net/uid-9162199-id-4738168.html',
-        'http://www.tuicool.com/articles/u67Bz26',
-        'http://rfyiamcool.blog.51cto.com/1030776/1538367/',
-        'http://itindex.net/detail/26512-flask-tornado-gevent']
-def get(url):
-    r = rs.get(url, timeout=2.0)
-rq.pool(get,URLS,100)#get函数 url列表 10,线程数
-'''
-'''
-url="http://2017.ip138.com/ic.asp"
-ip138=rq.get(url,proxies={"http": "http://127.0.0.1:1080","https": "http://127.0.0.1:1080"})
-ip2=rq.mid(ip138,"[","]")
-print(ip2)
-'''
-'''
-txt=''''''#Fiddler info copy
-url="https://www.v2ex.com/"
-f_headers=rq.f2h(txt)
-f_headers["User-Agent"]=rq.rua2()
-rt=rq.get(url,headers=f_headers)
-rq.rw(r"index.html",rt)
-'''
-#from Fleader.Plugin.qqwry.qqwry import QQwry
-#result = QQwry().lookup('115.196.104.131')
-#print(result)
 
+#并发测试
+# def Downloader(arg):
+#     q,lock=arg['arg']
+#     while 1:
+#         lock.acquire()
+#         if not q.empty():
+#             url=q.get()
+#             lock.release()
+#             rq.get(url)
+#         else:
+#             lock.release()
+#             break
+
+# if __name__ == "__main__":
+#     urls=['http://127.0.0.1']*100
+#     q,lock = rq.Manager()
+#     rq.feed(q,urls)
+#     rq.sPool(Downloader,tnum=25,cnum=4,arg=[q,lock])
+ 
 
 
 
