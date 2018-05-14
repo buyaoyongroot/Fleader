@@ -88,10 +88,10 @@ class fleader():
             try:
                 with open(response, 'r', encoding='utf-8') as f:
                     f.read()
-                    encoding='utf-8'                      
+                    encoding='utf-8'                     
             except:
                 encoding='gbk'
-    
+            return encoding
     @staticmethod        
     def f2h(txt):#fiddler转header
         arr=txt.split("\n")
