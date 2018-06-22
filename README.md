@@ -26,7 +26,7 @@ pip install fleader
 ```
 
 使用
-可自动识别url 
+可自动识别url 编码
 ```
 from fleader import fleader as rq
 rt=rq.get('http://www.runoob.com/')
