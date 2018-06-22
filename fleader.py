@@ -8,26 +8,25 @@ class fleader():
     #===============请求类=========================================
     @staticmethod#请求器
     def get(url,data='',cookie='',ip='',timeout=60,headers='',files='',session='',ex='',rw='',cache=''):
-        parm=fleader.struct_parm({'url':url,'headers':headers,'cookie':cookie})#构造器
+        parm=fleader.struct_parm({'url':url,'data':data,'headers':headers,'cookie':cookie})#构造器
         if session=='':
             s=requests
         else:
             s=session#requests.Session()#同步cookies
         if ip!='':
             ip={"http": ip,"https": ip}
-        if cache!='':#从缓存中读取数据
-            fleader.mk('cache')
+        if cache!='':#文件缓存
             hash=fleader.md5(parm['url']+str(data))#参数哈希待调优
             import os
-            for root, dirs, fs in os.walk('cache'): #目录路径,所有子目录,非目录子文件   
+            for root, dirs, fs in os.walk(r'cache/%s'%(fleader.time(2))): #目录路径,所有子目录,非目录子文件   
                 for f in fs:  
                     if os.path.splitext(f)[0]==hash:#os.path.splitext()拆分为文件名+扩展名
-                        res_text=fleader.rw(os.path.join(root,f),aw='r')
+                        res_text=fleader.rw(os.path.join(root,f))
                         return fleader.ex(res_text,ex)
         if data=='':
             response=s.get(parm['url'],headers=parm['headers'],proxies=ip,timeout=timeout,verify=False)
         else:
-            response=s.post(parm['url'],headers=parm['headers'],proxies=ip,data=data,timeout=timeout,files=files,verify=False)   
+            response=s.post(parm['url'],headers=parm['headers'],proxies=ip,data=parm['data'],timeout=timeout,files=files,verify=False)   
         if response.status_code==200:
             encode=fleader._get_encode(response,'html')
             if(encode):
@@ -36,9 +35,7 @@ class fleader():
             if rw!='':
                 fleader.rw(rw, res_text,aw='w')
             if cache!='':
-                fleader.mk('cache')
-                hash=fleader.md5(parm['url']+str(data))
-                fleader.rw(r'cache/%s.html'%(hash), res_text,aw='w')
+                fleader.rw(r'cache/%s/%s.html'%(fleader.time(2),hash), res_text,aw='w')
             return fleader.ex(res_text,ex)
         else:
             return response.status_code
@@ -47,7 +44,7 @@ class fleader():
     def ex(res_text,ex=''):
         if type(ex)==list:
             if ex[0]=='mid':
-                rt=mid(res_text,ex[1],ex[2])
+                rt=fleader.mid(res_text,ex[1],ex[2])
                 return res_text,rt
             if ex[0]=='re':
                 import re
@@ -111,6 +108,8 @@ class fleader():
             parm['headers']=fleader.struct_headers(parm['headers'],cookie)
         if 'url' in parm:
             parm['url']=fleader.struct_url(parm['url'])
+        if 'data' in parm:
+            parm['data']=fleader.struct_data(parm['data'])
         return parm
 
     @staticmethod    
@@ -151,6 +150,22 @@ class fleader():
             url=urlc+"?"+par[:-1]
         return url
 
+    @staticmethod    
+    def struct_data(data):
+        if type(data)==str and data!='':
+            import urllib.parse
+            mdata=map(lambda i:i.split('='),urllib.parse.unquote(data).split('&'))
+            data={}
+            for i in mdata:
+                if i[0] not in data:
+                    data[i[0]]=i[1]
+                else:
+                    if type(data[i[0]])==str:
+                        data[i[0]]=[data[i[0]]]
+                    if type(data[i[0]])==list:
+                        data[i[0]].append(i[1])
+        return data
+
     @staticmethod#图片下载器
     def u2f(url,path,headers=""):   
         if headers=="":
@@ -178,42 +193,52 @@ class fleader():
 
     #===============文件类=========================================
     @staticmethod
-    def mk(path):
-        import os
+    def mk(path,cut=True):
+        import os,sys
+        if cut:
+            path=path.replace('.','/')
+        rpath=os.path.dirname(os.path.realpath(__file__)).replace('\\','/')+'/'+path
         if not os.path.exists(path):
-            #os.mkdir(path)
             os.makedirs(path)
+        return rpath
 
     @staticmethod         
-    def rw(path, line="", aw='a',sp=""):
+    def rw(path, line=None, aw='a',sp=""):
+        import os
+        path0=os.path.split(path)[0]
+        if path0!='':
+            fleader.mk(path0,False)
+        if line == None:
+            aw='r'
+        if line == '':
+            aw='w'
+        if aw=='r':
+            arr = []
+            with open(path, 'r', encoding=fleader._get_encode(path,'text')) as f:
+                if aw=="r":
+                    return f.read()
+                for l in f:
+                    if sp=="":
+                        arr.append(l.replace("\n", ""))
+                    else:
+                        arr.append(l.replace("\n", "").split(sp))
+            return arr
+        if aw=='w' or aw=='a':
+            if type(line)==set or type(line)==list:
+                cont=''
+                for l in line:
+                    cont+=l + "\n"
+                with open(path, aw, encoding='utf-8') as f:
+                    f.write(cont)
+            else:
+                with open(path, aw, encoding='utf-8') as f:
+                    if aw == 'w' and line == '':
+                        f.write('')
+                    else:
+                        f.write(line  + "\n")
         if aw=='wb':
             with open(path, 'wb') as f:
-                f.write(line)            
-        else:
-            if line == "":
-                arr = []
-                with open(path, 'r', encoding=fleader._get_encode(path,'text')) as f:
-                    if aw=="r":
-                        return f.read()
-                    for l in f:
-                        if sp=="":
-                            arr.append(l.replace("\n", ""))
-                        else:
-                            arr.append(l.replace("\n", "").split(sp))
-                return arr
-            else:
-                if type(line)==set or type(line)==list:
-                    cont=''
-                    for l in line:
-                        cont+=l + "\n"
-                    with open(path, aw, encoding='utf-8') as f:
-                        f.write(cont)
-                else:
-                    with open(path, aw, encoding='utf-8') as f:
-                        if aw == 'w' and line == '':
-                            f.write('')
-                        else:
-                            f.write(line + "\n")
+                f.write(line)     
 
 
     @staticmethod
@@ -233,16 +258,6 @@ class fleader():
             cf.write(f)
             f.close()   
 
-
-    @staticmethod
-    def csv(path, line=[], aw='a',f=""):
-        import csv
-        with open(path,aw,encoding="utf-8") as datacsv:
-             if f=="":
-                 csvwriter = csv.writer(datacsv,dialect = ("excel"))
-             else:
-                 csvwriter = csv.writer(datacsv,dialect = ("excel"),delimiter=f)
-             csvwriter.writerow(line)
     #===============文本处理类=========================================
     @staticmethod
     def mid(s1,s2,s3):
@@ -350,7 +365,7 @@ class fleader():
 
     @staticmethod
     def hash():
-        import random
+        import time,random
         time12 = int(time.time()*1000)
         rand04 = random.randint(1000,9999)
         return fleader.md5(str(time12)+str(rand04))
@@ -364,3 +379,20 @@ class fleader():
     def print(arg):
         from pprint import pprint
         pprint(arg)
+    #===============时间类=========================================   
+    @staticmethod
+    def time(i=0):
+        import time
+        if i==0:return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+        if i==1:return time.strftime("%Y-%m-%d %H%M%S", time.localtime()) 
+        if i==2:return time.strftime("%Y-%m-%d", time.localtime()) 
+    #===============类型转换类========================================= 
+    @staticmethod
+    def bool(arg):
+        arg=arg.lower()
+        if arg=='true':
+            return True
+        return False
+if __name__ == '__main__':
+    # print(fleader.time(2))
+    pass
