@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore")#忽略警告
 class fleader():
     #===============请求类=========================================
     @staticmethod#请求器
-    def get(url,data='',cookie='',ip='',timeout=60,headers='',files='',session='',ex='',rw='',cache=''):
+    def get(url,data='',cookie='',ip='',timeout=60,headers='',encode='',redect=True,files='',session='',prce='',ex='',tail='',rw='',cache=False):
         parm=fleader.struct_parm({'url':url,'data':data,'headers':headers,'cookie':cookie})#构造器
         if session=='':
             s=requests
@@ -15,7 +15,7 @@ class fleader():
             s=session#requests.Session()#同步cookies
         if ip!='':
             ip={"http": ip,"https": ip}
-        if cache!='':#文件缓存
+        if cache:#文件缓存
             hash=fleader.md5(parm['url']+str(data))#参数哈希待调优
             import os
             for root, dirs, fs in os.walk(r'cache/%s'%(fleader.time(2))): #目录路径,所有子目录,非目录子文件   
@@ -23,23 +23,56 @@ class fleader():
                     if os.path.splitext(f)[0]==hash:#os.path.splitext()拆分为文件名+扩展名
                         res_text=fleader.rw(os.path.join(root,f))
                         return fleader.ex(res_text,ex)
-        if data=='':
-            response=s.get(parm['url'],headers=parm['headers'],proxies=ip,timeout=timeout,verify=False)
-        else:
-            response=s.post(parm['url'],headers=parm['headers'],proxies=ip,data=parm['data'],timeout=timeout,files=files,verify=False)   
+        response=None
+        try_time=1
+        while 1:
+            try:
+                if data=='':
+                    response=s.get(parm['url'],headers=parm['headers'],proxies=ip,timeout=timeout,verify=False,allow_redirects=redect)
+                else:
+                    response=s.post(parm['url'],headers=parm['headers'],proxies=ip,data=parm['data'],timeout=timeout,files=files,verify=False,allow_redirects=redect)   
+                if response.status_code!=None:
+                    break
+            except Exception as e:
+                try_time+=1
+                if try_time>3:
+                    if ex!='':
+                        return 404,e
+                    else:
+                        return e
         if response.status_code==200:
-            encode=fleader._get_encode(response,'html')
-            if(encode):
-                response.encoding=encode
+            if encode=='':
+                encode=fleader._get_encode(response,'html')
+            response.encoding=encode
             res_text=response.text
+            res_text=fleader.filter(res_text,prce)
             if rw!='':
                 fleader.rw(rw, res_text,aw='w')
-            if cache!='':
+            if cache:
                 fleader.rw(r'cache/%s/%s.html'%(fleader.time(2),hash), res_text,aw='w')
-            return fleader.ex(res_text,ex)
+            return fleader.filter(fleader.ex(res_text,ex),tail)
         else:
-            return response.status_code
+            if response.status_code==302:
+                return response.status_code,response.headers
+            if ex!='':
+                return response.status_code,''
+            return response.status_code,response
 
+    @staticmethod#文本拦截器
+    def filter(res_text,filter=''):
+        if type(filter)==list:
+            if filter[0]=='rpc':
+                res_text=fleader.rpc(res_text,list(filter[1]))
+                return res_text
+        if filter=='emoji':
+            res_text=fleader.filter_emoji(res_text)
+            return res_text
+        if filter=='xa0':
+            res_text=fleader.rpc(res_text,['\xbb','\xa9','\xa0'])
+            # '\ue606','\ue619','\ue607','\ue60c','\ue604','\ue61b','\ue61a','\ue60f'
+            return res_text
+        return res_text
+               
     @staticmethod#文本处理器
     def ex(res_text,ex=''):
         if type(ex)==list:
@@ -70,6 +103,10 @@ class fleader():
             import json
             js=json.loads(res_text)
             return res_text,js
+        if ex=='btf':
+            import bs4
+            soup=bs4.BeautifulSoup(res_text,"html.parser")
+            return soup.prettify()           
         return res_text
 
     @staticmethod#编码处理器
@@ -297,6 +334,15 @@ class fleader():
                 str='http:'+str
             return str
         return ''
+
+    @staticmethod
+    def filter_emoji(desstr,restr=''):
+        import re
+        try:
+            co = re.compile(u'[\U00010000-\U0010ffff]')
+        except re.error:
+            co = re.compile(u'[\uD800-\uDBFF][\uDC00-\uDFFF]')
+        return co.sub(restr, desstr)
     #===============数据处理类=====================================
     @staticmethod
     def feed(q,urls):#q是值传递
@@ -386,6 +432,8 @@ class fleader():
         if i==0:return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
         if i==1:return time.strftime("%Y-%m-%d %H%M%S", time.localtime()) 
         if i==2:return time.strftime("%Y-%m-%d", time.localtime()) 
+        if i==3:return time.strftime("%Y%m%d", time.localtime()) 
+        if i==4:return time.strftime("%Y%m", time.localtime()) 
     #===============类型转换类========================================= 
     @staticmethod
     def bool(arg):
